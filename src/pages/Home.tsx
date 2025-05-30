@@ -3,12 +3,11 @@ import { useLocation } from 'react-router-dom';
 import PostCard from '../components/posts/PostCard';
 import { usePosts } from '../contexts/PostsContext';
 import { Post } from '../types';
-import { Search, Filter, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const Home: React.FC = () => {
   const location = useLocation();
-  const { posts, loading } = usePosts();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { posts, loading, searchTerm, setSearchTerm } = usePosts();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   
@@ -51,22 +50,9 @@ const Home: React.FC = () => {
   
   return (
     <div>
-      {/* Search and Filter Bar */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search for posts, topics, or tags"
-              className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-          
+      {/* Search bar moved to Header. Only show filter clear and active filter here. */}
+      {(activeFilter || searchTerm) && (
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
           {(activeFilter || searchTerm) && (
             <button
               onClick={clearFilters}
@@ -76,23 +62,22 @@ const Home: React.FC = () => {
               Clear Filters
             </button>
           )}
+          {activeFilter && (
+            <div className="mt-3 flex items-center">
+              <span className="text-sm text-gray-500 mr-2">Active filter:</span>
+              <span className="bg-blue-50 text-primary px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                {activeFilter}
+                <button
+                  onClick={() => setActiveFilter(null)}
+                  className="ml-1 text-gray-500 hover:text-red-500"
+                >
+                  <X size={14} />
+                </button>
+              </span>
+            </div>
+          )}
         </div>
-        
-        {activeFilter && (
-          <div className="mt-3 flex items-center">
-            <span className="text-sm text-gray-500 mr-2">Active filter:</span>
-            <span className="bg-blue-50 text-primary px-2 py-1 rounded-full text-xs font-medium flex items-center">
-              {activeFilter}
-              <button
-                onClick={() => setActiveFilter(null)}
-                className="ml-1 text-gray-500 hover:text-red-500"
-              >
-                <X size={14} />
-              </button>
-            </span>
-          </div>
-        )}
-      </div>
+      )}
       
       {/* Posts List */}
       <div className="space-y-6">

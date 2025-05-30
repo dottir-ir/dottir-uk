@@ -30,6 +30,15 @@ export interface Post {
   createdAt: string;
   likes: string[]; // Array of user IDs who liked the post
   comments: Comment[];
+  specialty?: string;
+  age?: string;
+  gender?: string;
+  symptoms?: string;
+  history?: string;
+  imageDescriptions?: string[];
+  diagnosis?: string;
+  treatment?: string;
+  outcome?: string;
 }
 
 // Comment Type

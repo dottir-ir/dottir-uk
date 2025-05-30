@@ -48,22 +48,7 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 sticky top-20">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">My Profile</h2>
-        <Link to={`/profile/${currentUser?.id}`} className="flex items-center p-2 hover:bg-gray-50 rounded-md">
-          <img
-            src={currentUser?.avatar}
-            alt={currentUser?.name}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div className="ml-3">
-            <div className="font-medium text-gray-900">{currentUser?.name}</div>
-            <div className="text-xs text-gray-500 capitalize">{currentUser?.role}</div>
-          </div>
-        </Link>
-      </div>
-      
+    <div className="bg-white rounded-lg shadow-sm p-4 sticky top-[112px] z-10">
       {currentUser?.role === 'doctor' && (
         <div className="mb-6">
           <Link
@@ -75,7 +60,6 @@ const Sidebar: React.FC = () => {
           </Link>
         </div>
       )}
-      
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">Categories</h2>
         <div className="space-y-1">

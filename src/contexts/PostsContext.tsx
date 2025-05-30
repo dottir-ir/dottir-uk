@@ -12,6 +12,8 @@ interface PostsContextType {
   addComment: (postId: string, content: string) => void;
   getUserPosts: (userId: string) => Post[];
   getPost: (postId: string) => Post | undefined;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
 }
 
 // Mock initial posts
@@ -96,6 +98,7 @@ export const PostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -233,7 +236,9 @@ export const PostsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     unlikePost,
     addComment,
     getUserPosts,
-    getPost
+    getPost,
+    searchTerm,
+    setSearchTerm
   };
 
   return (

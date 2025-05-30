@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Stethoscope } from 'lucide-react';
 import { UserRole } from '../../types';
 import toast from 'react-hot-toast';
+import logo from '../../assets/icons/logo-site.svg';
 
 const SignUp: React.FC = () => {
   const [name, setName] = useState('');
@@ -48,11 +48,9 @@ const SignUp: React.FC = () => {
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm p-8 space-y-6">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="p-3 rounded-full bg-primary text-white">
-              <Stethoscope size={24} />
-            </div>
+            <img src={logo} alt="Dottir Logo" className="h-16 w-auto" />
           </div>
-          <h1 className="mt-4 text-3xl font-bold text-gray-900">Join Medi<span className="text-primary">Share</span></h1>
+          <h1 className="mt-4 text-3xl font-bold text-gray-900">Create Account</h1>
           <p className="mt-2 text-sm text-gray-600">
             Create an account to share and discuss medical cases
           </p>
