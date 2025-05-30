@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Primary color palette */
+  --color-primary: 0, 112, 201; /* #0070C9 */
+  --color-primary-dark: 0, 96, 173; /* #0060AD */
+  --color-secondary: 32, 174, 192; /* #20AEC0 */
+  --color-accent: 245, 129, 31; /* #F5811F */
+  
+  /* State colors */
+  --color-success: 52, 199, 89; /* #34C759 */
+  --color-warning: 255, 149, 0; /* #FF9500 */
+  --color-error: 255, 59, 48; /* #FF3B30 */
+}
+
+@layer base {
+  body {
+    @apply text-gray-800 font-sans antialiased;
+  }
+  
+  /* Global focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-opacity-50;
+  }
+}
+
+@layer components {
+  /* Custom button styles */
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-colors;
+  }
+
+  /* Animation classes */
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-in-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
