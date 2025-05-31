@@ -44,7 +44,7 @@ const SignUp: React.FC = () => {
   const [role, setRole] = useState<UserRole>('student');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signup } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,8 +63,13 @@ const SignUp: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await signup(email, password, name, role);
-      toast.success('Account created successfully!');
+      const result = await signUp(email, password, name, role);
+      if (result && result.warning) {
+        toast.success('Account created successfully!');
+        toast.error(result.warning);
+      } else {
+        toast.success('Account created successfully!');
+      }
       navigate('/');
     } catch (error) {
       toast.error('Failed to create account');

@@ -1,133 +1,375 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { UserRole, User } from '../types';
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { User as SupabaseUser, Session } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
+import { User } from '../types'
+import toast from 'react-hot-toast'
+import { authService } from '../services/api/authService'
+import { getDeviceInfo } from '../utils/auth'
 
-interface AuthContextType {
-  currentUser: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
+interface Profile {
+  id: string
+  username: string
+  full_name: string
+  avatar_url: string | null
+  role: 'doctor' | 'patient' | 'admin'
+  is_verified: boolean
+  verification_document_url?: string
+  created_at: string
+  updated_at: string
 }
 
-// Create the Auth Context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+  user: SupabaseUser | null
+  currentUser: User | null
+  currentProfile: Profile | null
+  session: Session | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, profile: Partial<Profile>) => Promise<void>
+  signOut: () => Promise<void>
+  updateProfile: (profile: Partial<Profile>) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
+  resetPassword: (password: string) => Promise<void>
+  verifyEmail: (token: string) => Promise<void>
+  uploadVerificationDocument: (file: File) => Promise<string>
+  resendVerification: () => Promise<void>
+  requiresMFA: boolean
+  verifyMFA: (code: string) => Promise<void>
+  cancelMFA: () => void
+}
 
-// Mock users for demo purposes (in real app, this would be in a database)
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Dr. Jane Smith',
-    email: 'jane@example.com',
-    role: 'doctor',
-    avatar: 'https://images.pexels.com/photos/5452201/pexels-photo-5452201.jpeg?auto=compress&cs=tinysrgb&w=150',
-    specialty: 'Cardiology',
-    bio: 'Cardiologist with 10 years of experience',
-    createdAt: new Date('2023-01-15').toISOString()
-  },
-  {
-    id: '2',
-    name: 'John Medical Student',
-    email: 'john@example.com',
-    role: 'student',
-    avatar: 'https://images.pexels.com/photos/5327585/pexels-photo-5327585.jpeg?auto=compress&cs=tinysrgb&w=150',
-    specialty: 'General Medicine',
-    bio: 'Third year medical student',
-    createdAt: new Date('2023-03-20').toISOString()
-  }
-];
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [requiresMFA, setRequiresMFA] = useState(false)
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null)
 
-  // Check for existing login on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('medishare_user');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Find user (this would be an API call in production)
-      const user = mockUsers.find(u => u.email === email);
-      
-      if (!user) {
-        throw new Error('Invalid email or password');
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setSession(session)
+      if (session?.user) {
+        fetchProfile(session.user.id)
       }
-      
-      // Store user in localStorage for persistence
-      localStorage.setItem('medishare_user', JSON.stringify(user));
-      setCurrentUser(user);
-    } catch (error) {
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+    })
 
-  const signup = async (email: string, password: string, name: string, role: UserRole) => {
-    setLoading(true);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null)
+      setSession(session)
+      if (session?.user) {
+        await fetchProfile(session.user.id)
+      } else {
+        setCurrentUser(null)
+        setCurrentProfile(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const fetchProfile = async (userId: string) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Create new user (would be an API call in production)
-      const newUser: User = {
-        id: `user_${Date.now()}`,
-        name,
-        email,
-        role,
-        avatar: role === 'doctor' 
-          ? 'https://images.pexels.com/photos/5452293/pexels-photo-5452293.jpeg?auto=compress&cs=tinysrgb&w=150' 
-          : 'https://images.pexels.com/photos/5407206/pexels-photo-5407206.jpeg?auto=compress&cs=tinysrgb&w=150',
-        specialty: '',
-        bio: '',
-        createdAt: new Date().toISOString()
-      };
-      
-      // Store user in localStorage for persistence
-      localStorage.setItem('medishare_user', JSON.stringify(newUser));
-      setCurrentUser(newUser);
-    } catch (error) {
-      throw error;
+      // Fetch profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Fetch user for MFA status
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('mfa_enabled')
+        .eq('id', userId)
+        .single();
+
+      if (userError) throw userError;
+
+      if (profile) {
+        setCurrentUser({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          avatar: profile.avatar,
+          specialty: profile.specialty,
+          bio: profile.bio,
+          location: profile.location,
+          specialization: profile.specialization,
+          joinedAt: profile.joined_at,
+          lastActive: profile.last_active,
+          isVerified: profile.is_verified,
+          verificationDocumentUrl: profile.verification_document_url,
+          mfa_enabled: userData?.mfa_enabled ?? false,
+        });
+        setCurrentProfile(profile as Profile);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      setCurrentUser(null);
+      setCurrentProfile(null);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const logout = () => {
-    localStorage.removeItem('medishare_user');
-    setCurrentUser(null);
-  };
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign in')
+      throw err
+    }
+  }
+
+  const signUp = async (email: string, password: string, profile: Partial<Profile>) => {
+    try {
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (signUpError) throw signUpError
+      if (!user) throw new Error('No user returned from sign up')
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: user.id,
+            ...profile,
+            is_verified: false,
+          },
+        ])
+
+      if (profileError) throw profileError
+      toast.success('Account created successfully! Please check your email for verification.')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create account')
+      throw err
+    }
+  }
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      toast.success('Signed out successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign out')
+      throw err
+    }
+  }
+
+  const updateProfile = async (profile: Partial<Profile>) => {
+    if (!user) throw new Error('No user logged in')
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      await fetchProfile(user.id)
+      toast.success('Profile updated successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile')
+      throw err
+    }
+  }
+
+  const updatePassword = async (newPassword: string) => {
+    if (!user) throw new Error('No user logged in')
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (error) throw error
+      toast.success('Password updated successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password')
+      throw err
+    }
+  }
+
+  const resetPassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      })
+
+      if (error) throw error
+      toast.success('Password updated successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password')
+      throw err
+    }
+  }
+
+  const verifyEmail = async (token: string) => {
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'email',
+      })
+
+      if (error) throw error
+
+      // Update profile verification status
+      if (user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ is_verified: true })
+          .eq('id', user.id)
+
+        if (profileError) throw profileError
+        await fetchProfile(user.id)
+      }
+      toast.success('Email verified successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to verify email')
+      throw err
+    }
+  }
+
+  const uploadVerificationDocument = async (file: File): Promise<string> => {
+    if (!user) throw new Error('No user logged in')
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-verification.${fileExt}`
+      const filePath = `verification-documents/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath)
+
+      await updateProfile({ verification_document_url: publicUrl })
+      return publicUrl
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload verification document')
+      throw err
+    }
+  }
+
+  const resendVerification = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user?.email || '',
+      })
+
+      if (error) throw error
+      toast.success('Verification email sent. Please check your inbox.')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resend verification email')
+      throw err
+    }
+  }
+
+  const verifyMFA = async (code: string) => {
+    if (!pendingUserId) return
+
+    try {
+      const isValid = await authService.verifyMFA(pendingUserId, code)
+      
+      if (isValid) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', pendingUserId)
+          .single()
+
+        if (userError) throw userError
+
+        setUser(userData)
+        setRequiresMFA(false)
+        setPendingUserId(null)
+
+        // Create new session
+        await authService.createSession(
+          pendingUserId,
+          getDeviceInfo(),
+          await getClientIP()
+        )
+      } else {
+        toast.error('Invalid verification code')
+      }
+    } catch (error: any) {
+      toast.error(error.message)
+      throw error
+    }
+  }
+
+  const cancelMFA = () => {
+    setRequiresMFA(false)
+    setPendingUserId(null)
+    signOut()
+  }
+
+  const getClientIP = async (): Promise<string> => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json')
+      const data = await response.json()
+      return data.ip
+    } catch (error) {
+      console.error('Error fetching IP:', error)
+      return 'unknown'
+    }
+  }
 
   const value = {
+    user,
     currentUser,
+    currentProfile,
+    session,
     loading,
-    login,
-    signup,
-    logout,
-    isAuthenticated: !!currentUser
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    signIn,
+    signUp,
+    signOut,
+    updateProfile,
+    updatePassword,
+    resetPassword,
+    verifyEmail,
+    uploadVerificationDocument,
+    resendVerification,
+    requiresMFA,
+    verifyMFA,
+    cancelMFA,
   }
-  return context;
-};
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

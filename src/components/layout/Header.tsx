@@ -11,13 +11,13 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const { currentUser, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { searchTerm, setSearchTerm } = usePosts();
 
   const handleLogout = () => {
-    logout();
+    signOut();
     navigate('/login');
   };
 
@@ -58,14 +58,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="hidden md:flex items-center space-x-4">
             <div className="relative ml-3">
               <div className="flex items-center">
-                <Link to={`/profile/${currentUser?.id}`} className="flex items-center space-x-2">
+                <Link to={`/profile/${user?.id}`} className="flex items-center space-x-2">
                   <img
                     className="h-8 w-8 rounded-full object-cover"
-                    src={currentUser?.avatar}
+                    src={user && 'avatar' in user ? (user.avatar as string) : '/default-avatar.png'}
                     alt="Profile"
                   />
                   <span className="hidden lg:block text-sm font-medium text-gray-700">
-                    {currentUser?.name}
+                    {user && 'name' in user ? (user.name as string) : 'User'}
                   </span>
                 </Link>
                 <button
@@ -110,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="md:hidden bg-white shadow-lg">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               <Link
-                to={`/profile/${currentUser?.id}`}
+                to={`/profile/${user?.id}`}
                 className="px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >

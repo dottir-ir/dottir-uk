@@ -4,6 +4,7 @@ import PostCard from '../components/posts/PostCard';
 import { usePosts } from '../contexts/PostsContext';
 import { Post } from '../types';
 import { X } from 'lucide-react';
+import Posts from '../components/Posts';
 
 const Home: React.FC = () => {
   const location = useLocation();
@@ -50,6 +51,7 @@ const Home: React.FC = () => {
   
   return (
     <div>
+      <Posts />
       {/* Search bar moved to Header. Only show filter clear and active filter here. */}
       {(activeFilter || searchTerm) && (
         <div className="mb-6 flex flex-col sm:flex-row gap-4">

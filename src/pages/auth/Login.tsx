@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { MFAVerification } from '../../components/auth/MFAVerification';
+import { SSOConnections } from '../../components/auth/SSOConnections';
 import toast from 'react-hot-toast';
 import logoWhite from '../../assets/icons/logo-site-white.svg';
 
@@ -38,8 +40,9 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSSO, setShowSSO] = useState(false);
   
-  const { login } = useAuth();
+  const { signIn, requiresMFA, verifyMFA, cancelMFA } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,8 +56,8 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
-      navigate('/');
+      await signIn(email, password);
+      // Note: Navigation will be handled by AuthContext after MFA verification
     } catch (error) {
       toast.error('Invalid email or password');
       console.error(error);
@@ -63,6 +66,20 @@ const Login: React.FC = () => {
     }
   };
   
+  const handleMFASuccess = () => {
+    navigate('/dashboard');
+  };
+
+  if (requiresMFA) {
+    return (
+      <MFAVerification
+        userId={useAuth().user?.id || ''}
+        onSuccess={handleMFASuccess}
+        onCancel={cancelMFA}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen w-full flex flex-row">
       {/* Left column */}
@@ -151,6 +168,31 @@ const Login: React.FC = () => {
             <p className="mb-1">Demo Accounts:</p>
             <p><b>Doctor:</b> jane@example.com (any password)</p>
             <p><b>Student:</b> john@example.com (any password)</p>
+          </div>
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                onClick={() => setShowSSO(!showSSO)}
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {showSSO ? 'Hide' : 'Show'} Institutional Sign-In
+              </button>
+            </div>
+
+            {showSSO && (
+              <div className="mt-4">
+                <SSOConnections />
+              </div>
+            )}
           </div>
         </div>
       </div>
