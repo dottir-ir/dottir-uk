@@ -16,13 +16,25 @@
 }
 
 @layer base {
+  html {
+    @apply text-base;
+  }
+
   body {
     @apply text-gray-800 font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
   
   /* Global focus styles */
   *:focus-visible {
     @apply outline-none ring-2 ring-primary ring-opacity-50;
+  }
+
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a {
+      @apply min-h-[44px] min-w-[44px];
+    }
   }
 }
 
@@ -32,6 +44,26 @@
     @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition-colors;
   }
 
+  /* Responsive container */
+  .container-responsive {
+    @apply w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl;
+  }
+
+  /* Responsive text */
+  .text-responsive {
+    @apply text-sm sm:text-base;
+  }
+
+  /* Responsive padding */
+  .section-padding {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+
+  /* Responsive grid */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+  }
+
   /* Animation classes */
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-in-out;
@@ -39,6 +71,15 @@
 
   .animate-slideIn {
     animation: slideIn 0.3s ease-in-out;
+  }
+
+  /* Mobile menu animations */
+  .animate-slideInRight {
+    animation: slideInRight 0.3s ease-in-out;
+  }
+
+  .animate-slideOutRight {
+    animation: slideOutRight 0.3s ease-in-out;
   }
 }
 
@@ -50,4 +91,14 @@
 @keyframes slideIn {
   from { transform: translateY(10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
 }

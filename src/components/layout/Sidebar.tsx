@@ -9,6 +9,7 @@ import {
   Activity, 
   Microscope,
   Plus,
+  X,
   LucideIcon
 } from 'lucide-react';
 
@@ -16,6 +17,10 @@ interface CategoryProps {
   name: string;
   icon: React.ReactElement;
   count: number;
+}
+
+interface SidebarProps {
+  onClose?: () => void;
 }
 
 const Category: React.FC<CategoryProps> = ({ name, icon, count }) => (
@@ -35,7 +40,7 @@ const Category: React.FC<CategoryProps> = ({ name, icon, count }) => (
   </Link>
 );
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { currentUser } = useAuth();
 
   const categories = [
@@ -48,12 +53,25 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 sticky top-[112px] z-10">
+    <div className="h-full bg-white rounded-lg shadow-sm p-4 md:sticky md:top-[112px] z-10">
+      {/* Mobile close button */}
+      {onClose && (
+        <div className="flex justify-end mb-4 md:hidden">
+          <button
+            onClick={onClose}
+            className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          >
+            <X size={24} />
+          </button>
+        </div>
+      )}
+      
       {currentUser?.role === 'doctor' && (
         <div className="mb-6">
           <Link
             to="/create-post"
             className="w-full flex items-center justify-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+            onClick={onClose}
           >
             <Plus size={18} className="mr-2" />
             Share New Case

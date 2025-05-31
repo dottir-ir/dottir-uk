@@ -15,15 +15,7 @@ export default {
         error: 'rgb(var(--color-error))'
       },
       fontFamily: {
-        sans: [
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica Neue',
-          'Arial',
-          'sans-serif'
-        ]
+        sans: ['Inter', 'system-ui', 'sans-serif']
       },
       spacing: {
         '128': '32rem',
